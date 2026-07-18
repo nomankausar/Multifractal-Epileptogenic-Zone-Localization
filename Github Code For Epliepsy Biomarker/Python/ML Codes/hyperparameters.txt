@@ -1,0 +1,181 @@
+PATIENT-WISE EZ CLASSIFICATION
+HYPERPARAMETERS AND EVALUATION SETTINGS
+
+Shared settings
+---------------
+Features:
+  - Hq Value
+  - evec avg
+  - deltaH
+  - frac_Avg
+
+Target:
+  is_soz: 0 = Non-EZ, 1 = EZ
+
+Classification threshold:
+  0.50
+
+Outer validation:
+  10 patient-wise folds
+
+Adult split method:
+  Predefined manual patient folds
+
+Pediatric split method:
+  StratifiedGroupKFold(
+      n_splits=10,
+      shuffle=True,
+      random_state=42
+  )
+
+Missing-value handling:
+  SimpleImputer(strategy="median")
+  Fitted on the training fold only
+
+SMOTE:
+  sampling_strategy="auto"
+  k_neighbors=min(5, minority_training_count - 1)
+  random_state=42 + fold_number
+  Applied to the training fold only
+  Test data are never oversampled
+
+Random-state policy:
+  Base random state = 42
+  Model and SMOTE random state = 42 + fold_number
+
+Output figure:
+  PNG, 600 DPI
+
+
+1. Adult Logistic Regression
+----------------------------
+Preprocessing:
+  SimpleImputer(strategy="median")
+  StandardScaler()
+  SMOTE(training fold only)
+
+Model:
+  LogisticRegression(
+      C=np.inf,
+      solver="lbfgs",
+      max_iter=10000,
+      random_state=42 + fold_number
+  )
+
+C=np.inf makes the L2 penalty contribution effectively zero, providing an
+unregularized logistic-regression fit while using the lbfgs solver.
+
+
+2. Adult Random Forest
+----------------------
+Preprocessing:
+  SimpleImputer(strategy="median")
+  SMOTE(training fold only)
+
+Model:
+  RandomForestClassifier(
+      n_estimators=150,
+      criterion="gini",
+      max_features="sqrt",
+      min_samples_leaf=1,
+      random_state=42 + fold_number,
+      n_jobs=-1
+  )
+
+Important unchanged scikit-learn defaults:
+  max_depth=None
+  min_samples_split=2
+  bootstrap=True
+
+
+3. Pediatric Logistic Regression
+--------------------------------
+Preprocessing:
+  SimpleImputer(strategy="median")
+  StandardScaler()
+  SMOTE(training fold only)
+
+Model:
+  LogisticRegression(
+      C=np.inf,
+      solver="lbfgs",
+      max_iter=10000,
+      random_state=42 + fold_number
+  )
+
+
+4. Pediatric Random Forest
+--------------------------
+Preprocessing:
+  SimpleImputer(strategy="median")
+  SMOTE(training fold only)
+
+Model:
+  RandomForestClassifier(
+      n_estimators=150,
+      criterion="gini",
+      max_features="sqrt",
+      min_samples_leaf=1,
+      random_state=42 + fold_number,
+      n_jobs=-1
+  )
+
+Important unchanged scikit-learn defaults:
+  max_depth=None
+  min_samples_split=2
+  bootstrap=True
+
+
+5. Adult XGBoost
+----------------
+Preprocessing:
+  SimpleImputer(strategy="median")
+  SMOTE(training fold only)
+
+Model:
+  XGBClassifier(
+      objective="binary:logistic",
+      eval_metric="logloss",
+      n_estimators=200,
+      max_depth=3,
+      learning_rate=0.05,
+      subsample=0.80,
+      colsample_bytree=0.80,
+      min_child_weight=1,
+      reg_lambda=1.0,
+      tree_method="hist",
+      random_state=42 + fold_number,
+      n_jobs=-1,
+      verbosity=0
+  )
+
+
+6. Pediatric XGBoost
+--------------------
+Preprocessing:
+  SimpleImputer(strategy="median")
+  SMOTE(training fold only)
+
+Model:
+  XGBClassifier(
+      objective="binary:logistic",
+      eval_metric="logloss",
+      n_estimators=200,
+      max_depth=3,
+      learning_rate=0.05,
+      subsample=0.80,
+      colsample_bytree=0.80,
+      min_child_weight=1,
+      reg_lambda=1.0,
+      tree_method="hist",
+      random_state=42 + fold_number,
+      n_jobs=-1,
+      verbosity=0
+  )
+
+
+Hyperparameter-selection note
+-----------------------------
+These scripts use fixed hyperparameters. No hyperparameter search or tuning is
+performed on the outer test folds. Any future tuning should be performed only
+inside the training patients of each outer fold using nested group-aware cross-validation.
